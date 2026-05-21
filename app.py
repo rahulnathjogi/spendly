@@ -1,6 +1,8 @@
 import sqlite3
-from flask import Flask, flash, redirect, render_template, request, url_for
-from database.db import get_db, init_db, seed_db, create_user
+import functools
+from flask import Flask, flash, redirect, render_template, request, session, url_for
+from werkzeug.security import check_password_hash
+from database.db import get_db, init_db, seed_db, create_user, get_user_by_email
 
 app = Flask(__name__)
 app.secret_key = "spendly-dev-secret"
@@ -8,6 +10,20 @@ app.secret_key = "spendly-dev-secret"
 with app.app_context():
     init_db()
     seed_db()
+
+
+# ------------------------------------------------------------------ #
+# Auth helper                                                         #
+# ------------------------------------------------------------------ #
+
+def login_required(f):
+    @functools.wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get("user_id"):
+            flash("Please sign in to continue.")
+            return redirect(url_for("login"))
+        return f(*args, **kwargs)
+    return decorated
 
 
 # ------------------------------------------------------------------ #
@@ -46,8 +62,29 @@ def register():
     return render_template("register.html")
 
 
-@app.route("/login")
+@app.route("/login", methods=["GET", "POST"])
 def login():
+    if request.method == "POST":
+        email    = request.form.get("email", "").strip()
+        password = request.form.get("password", "")
+
+        if not email or not password:
+            flash("Email and password are required.")
+            return render_template("login.html")
+
+        user = get_user_by_email(email)
+        if user is None:
+            flash("No account found with that email.")
+            return render_template("login.html")
+
+        if not check_password_hash(user["password_hash"], password):
+            flash("Incorrect password.")
+            return render_template("login.html")
+
+        session["user_id"]   = user["id"]
+        session["user_name"] = user["name"]
+        return redirect(url_for("profile"))
+
     return render_template("login.html")
 
 
@@ -67,7 +104,8 @@ def privacy():
 
 @app.route("/logout")
 def logout():
-    return "Logout — coming in Step 3"
+    session.clear()
+    return redirect(url_for("landing"))
 
 
 @app.route("/profile")
