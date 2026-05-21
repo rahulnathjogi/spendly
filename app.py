@@ -109,8 +109,9 @@ def logout():
 
 
 @app.route("/profile")
+@login_required
 def profile():
-    return "Profile page — coming in Step 4"
+    return render_template("profile.html")
 
 
 @app.route("/expenses/add")
