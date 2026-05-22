@@ -2,10 +2,10 @@ import math
 import sqlite3
 import functools
 from datetime import date as _date, datetime, timedelta
-from flask import Flask, flash, redirect, render_template, request, session, url_for
+from flask import Flask, abort, flash, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash
 from database.db import get_db, init_db, seed_db, create_user, get_user_by_email
-from database.queries import get_user_by_id, get_summary_stats, get_recent_transactions, get_category_breakdown, insert_expense
+from database.queries import get_user_by_id, get_summary_stats, get_recent_transactions, get_category_breakdown, insert_expense, get_expense_by_id, update_expense
 
 ALLOWED_CATEGORIES = ["Food", "Transport", "Bills", "Health", "Entertainment", "Shopping", "Other"]
 
@@ -223,9 +223,53 @@ def add_expense():
     return render_template("add_expense.html", form=form, categories=ALLOWED_CATEGORIES)
 
 
-@app.route("/expenses/<int:id>/edit")
+@app.route("/expenses/<int:id>/edit", methods=["GET", "POST"])
+@login_required
 def edit_expense(id):
-    return "Edit expense — coming in Step 8"
+    expense = get_expense_by_id(id, session["user_id"])
+    if expense is None:
+        abort(404)
+
+    if request.method == "POST":
+        raw_amount  = request.form.get("amount", "").strip()
+        category    = request.form.get("category", "").strip()
+        raw_date    = request.form.get("date", "").strip()
+        description = request.form.get("description", "").strip() or None
+        form        = {"id": id, "amount": raw_amount, "category": category,
+                       "date": raw_date, "description": description or ""}
+
+        try:
+            amount = float(raw_amount)
+            if amount <= 0 or not math.isfinite(amount):
+                raise ValueError
+        except ValueError:
+            flash("Amount must be a positive number.")
+            return render_template("edit_expense.html", form=form,
+                                   categories=ALLOWED_CATEGORIES)
+
+        if category not in ALLOWED_CATEGORIES:
+            flash("Please select a valid category.")
+            return render_template("edit_expense.html", form=form,
+                                   categories=ALLOWED_CATEGORIES)
+
+        try:
+            datetime.strptime(raw_date, "%Y-%m-%d")
+        except ValueError:
+            flash("Please enter a valid date.")
+            return render_template("edit_expense.html", form=form,
+                                   categories=ALLOWED_CATEGORIES)
+
+        try:
+            update_expense(id, session["user_id"], amount, category, raw_date, description)
+        except sqlite3.Error:
+            flash("Could not save changes. Please try again.", "error")
+            return render_template("edit_expense.html", form=form,
+                                   categories=ALLOWED_CATEGORIES)
+        flash("Expense updated.", "success")
+        return redirect(url_for("profile"))
+
+    form = dict(expense)
+    return render_template("edit_expense.html", form=form, categories=ALLOWED_CATEGORIES)
 
 
 @app.route("/expenses/<int:id>/delete")
