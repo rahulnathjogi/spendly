@@ -1,11 +1,17 @@
 import sqlite3
 import functools
+from datetime import datetime
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash
-from database.db import get_db, init_db, seed_db, create_user, get_user_by_email
+from database.db import get_db, init_db, seed_db, create_user, get_user_by_email, get_user_by_id, get_expense_stats
 
 app = Flask(__name__)
 app.secret_key = "spendly-dev-secret"
+
+
+@app.template_filter("inr")
+def inr_filter(value):
+    return f"₹{value:,.2f}"
 
 with app.app_context():
     init_db()
@@ -111,7 +117,13 @@ def logout():
 @app.route("/profile")
 @login_required
 def profile():
-    return render_template("profile.html")
+    user  = get_user_by_id(session["user_id"])
+    stats = get_expense_stats(session["user_id"])
+    member_since = ""
+    if user and user["created_at"]:
+        dt = datetime.strptime(user["created_at"], "%Y-%m-%d %H:%M:%S")
+        member_since = dt.strftime("%B %Y")
+    return render_template("profile.html", user=user, stats=stats, member_since=member_since)
 
 
 @app.route("/expenses/add")

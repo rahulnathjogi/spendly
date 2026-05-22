@@ -2,13 +2,175 @@
 
 {% block title %}Profile — Spendly{% endblock %}
 
+{% block head %}
+<style>
+    .profile-page {
+        max-width: var(--max-width);
+        margin: 0 auto;
+        padding: 3rem 2rem 4rem;
+    }
+
+    /* ---- Header ---- */
+    .profile-header {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .profile-avatar {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: var(--paper);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 2rem;
+        flex-shrink: 0;
+    }
+
+    .profile-header-text h1 {
+        font-family: var(--font-display);
+        font-size: 2rem;
+        line-height: 1.1;
+        color: var(--ink);
+    }
+
+    .profile-header-text p {
+        color: var(--ink-muted);
+        font-size: 0.95rem;
+        margin-top: 0.25rem;
+    }
+
+    /* ---- Stats row ---- */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: var(--paper-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 1.5rem;
+    }
+
+    .stat-label {
+        font-size: 0.78rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--ink-muted);
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+        font-family: var(--font-display);
+        font-size: 1.75rem;
+        color: var(--ink);
+        line-height: 1;
+    }
+
+    .stat-card.accent .stat-value {
+        color: var(--accent);
+    }
+
+    /* ---- Account details card ---- */
+    .details-card {
+        background: var(--paper-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 1.75rem 2rem;
+    }
+
+    .details-card h2 {
+        font-family: var(--font-display);
+        font-size: 1.1rem;
+        color: var(--ink);
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid var(--border-soft);
+    }
+
+    .details-row {
+        display: flex;
+        align-items: baseline;
+        gap: 1rem;
+        padding: 0.6rem 0;
+        border-bottom: 1px solid var(--border-soft);
+    }
+
+    .details-row:last-child {
+        border-bottom: none;
+    }
+
+    .details-key {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--ink-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        min-width: 120px;
+    }
+
+    .details-val {
+        font-size: 0.95rem;
+        color: var(--ink-soft);
+    }
+
+    @media (max-width: 600px) {
+        .stats-grid { grid-template-columns: 1fr; }
+        .profile-header { flex-direction: column; align-items: flex-start; }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<section class="auth-section">
-    <div class="auth-container">
-        <div class="auth-header">
-            <h1 class="auth-title">Welcome, {{ session['user_name'] }}!</h1>
-            <p class="auth-subtitle">Your profile page is coming in Step 4.</p>
+<div class="profile-page">
+
+    <div class="profile-header">
+        <div class="profile-avatar">{{ user.name[0] | upper }}</div>
+        <div class="profile-header-text">
+            <h1>{{ user.name }}</h1>
+            <p>{{ user.email }}</p>
         </div>
     </div>
-</section>
+
+    <div class="stats-grid">
+        <div class="stat-card accent">
+            <div class="stat-label">Total Spent</div>
+            <div class="stat-value">{{ stats.total | inr }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Expenses</div>
+            <div class="stat-value">{{ stats.count }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Top Category</div>
+            <div class="stat-value">{{ stats.top_category or "—" }}</div>
+        </div>
+    </div>
+
+    <div class="details-card">
+        <h2>Account Details</h2>
+        <div class="details-row">
+            <span class="details-key">Name</span>
+            <span class="details-val">{{ user.name }}</span>
+        </div>
+        <div class="details-row">
+            <span class="details-key">Email</span>
+            <span class="details-val">{{ user.email }}</span>
+        </div>
+        <div class="details-row">
+            <span class="details-key">Member Since</span>
+            <span class="details-val">{{ member_since }}</span>
+        </div>
+    </div>
+
+</div>
 {% endblock %}
