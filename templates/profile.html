@@ -220,7 +220,7 @@
         padding: 0 0.5rem 0.75rem;
     }
 
-    .transactions-table thead th:last-child { text-align: right; }
+    .transactions-table thead th:nth-child(4) { text-align: right; }
 
     .transactions-table tbody tr {
         border-top: 1px solid var(--border-soft);
@@ -232,11 +232,20 @@
         vertical-align: middle;
     }
 
-    .transactions-table tbody td:last-child {
+    .transactions-table tbody td:nth-child(4) {
         text-align: right;
         font-weight: 600;
         color: var(--ink);
     }
+
+    .tx-action a {
+        font-size: 0.82rem;
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .tx-action a:hover { text-decoration: underline; }
 
     .tx-date {
         color: var(--ink-muted);
@@ -451,6 +460,7 @@
                         <th>Description</th>
                         <th>Category</th>
                         <th>Amount</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -464,6 +474,9 @@
                             </span>
                         </td>
                         <td>{{ t.amount | inr }}</td>
+                        <td class="tx-action">
+                            <a href="{{ url_for('edit_expense', id=t.id) }}">Edit</a>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
