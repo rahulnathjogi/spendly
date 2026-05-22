@@ -123,6 +123,145 @@
         color: var(--ink-soft);
     }
 
+    /* ---- Transactions (SA1 adds styles below) ---- */
+    .transactions-card {
+        background: var(--paper-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 1.75rem 2rem;
+        margin-top: 1.5rem;
+    }
+
+    .transactions-card h2 {
+        font-family: var(--font-display);
+        font-size: 1.1rem;
+        color: var(--ink);
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid var(--border-soft);
+    }
+
+    .transactions-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.93rem;
+    }
+
+    .transactions-table thead th {
+        text-align: left;
+        font-size: 0.78rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--ink-muted);
+        padding: 0.4rem 0.75rem 0.75rem;
+    }
+
+    .transactions-table thead th:last-child {
+        text-align: right;
+    }
+
+    .transactions-table tbody tr {
+        border-top: 1px solid var(--border-soft);
+    }
+
+    .transactions-table tbody td {
+        padding: 0.7rem 0.75rem;
+        color: var(--ink-soft);
+        vertical-align: middle;
+    }
+
+    .transactions-table tbody td:last-child {
+        text-align: right;
+        font-weight: 600;
+        color: var(--ink);
+    }
+
+    .transactions-table .tx-date {
+        color: var(--ink-muted);
+        font-size: 0.85rem;
+        white-space: nowrap;
+    }
+
+    .transactions-table .tx-category {
+        font-size: 0.82rem;
+        color: var(--ink-muted);
+    }
+
+    .transactions-empty {
+        text-align: center;
+        color: var(--ink-muted);
+        padding: 2rem 0;
+        font-size: 0.95rem;
+    }
+
+    /* ---- Category Breakdown (SA3 adds styles below) ---- */
+    .categories-card {
+        background: var(--paper-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 1.75rem 2rem;
+        margin-top: 1.5rem;
+    }
+
+    .categories-card h2 {
+        font-family: var(--font-display);
+        font-size: 1.1rem;
+        color: var(--ink);
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid var(--border-soft);
+    }
+
+    .category-row {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.6rem 0;
+    }
+
+    .category-name {
+        font-size: 0.9rem;
+        color: var(--ink-soft);
+        min-width: 110px;
+    }
+
+    .category-bar-wrap {
+        flex: 1;
+        background: var(--border);
+        border-radius: 999px;
+        height: 8px;
+        overflow: hidden;
+    }
+
+    .category-bar-fill {
+        height: 100%;
+        background: var(--accent);
+        border-radius: 999px;
+    }
+
+    .category-pct {
+        font-size: 0.82rem;
+        color: var(--ink-muted);
+        min-width: 36px;
+        text-align: right;
+    }
+
+    .category-amount {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--ink);
+        min-width: 80px;
+        text-align: right;
+    }
+
+    .categories-empty {
+        text-align: center;
+        color: var(--ink-muted);
+        padding: 2rem 0;
+        font-size: 0.95rem;
+    }
+
     @media (max-width: 600px) {
         .stats-grid { grid-template-columns: 1fr; }
         .profile-header { flex-direction: column; align-items: flex-start; }
@@ -144,11 +283,11 @@
     <div class="stats-grid">
         <div class="stat-card accent">
             <div class="stat-label">Total Spent</div>
-            <div class="stat-value">{{ stats.total | inr }}</div>
+            <div class="stat-value">{{ stats.total_spent | inr }}</div>
         </div>
         <div class="stat-card">
             <div class="stat-label">Expenses</div>
-            <div class="stat-value">{{ stats.count }}</div>
+            <div class="stat-value">{{ stats.transaction_count }}</div>
         </div>
         <div class="stat-card">
             <div class="stat-label">Top Category</div>
@@ -168,8 +307,56 @@
         </div>
         <div class="details-row">
             <span class="details-key">Member Since</span>
-            <span class="details-val">{{ member_since }}</span>
+            <span class="details-val">{{ user.member_since }}</span>
         </div>
+    </div>
+
+    <!-- ── Recent Transactions ── SA1 implements this section ────────── -->
+    <div class="transactions-card">
+        <h2>Recent Transactions</h2>
+        {% if transactions %}
+        <table class="transactions-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Category</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in transactions %}
+                <tr>
+                    <td class="tx-date">{{ t.date }}</td>
+                    <td>{{ t.description }}</td>
+                    <td class="tx-category">{{ t.category }}</td>
+                    <td>{{ t.amount | inr }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="transactions-empty">No transactions yet.</p>
+        {% endif %}
+    </div>
+
+    <!-- ── Category Breakdown ── SA3 implements this section ─────────── -->
+    <div class="categories-card">
+        <h2>Spending by Category</h2>
+        {% if categories %}
+            {% for c in categories %}
+            <div class="category-row">
+                <span class="category-name">{{ c.name }}</span>
+                <div class="category-bar-wrap">
+                    <div class="category-bar-fill" style="width: {{ c.pct }}%"></div>
+                </div>
+                <span class="category-pct">{{ c.pct }}%</span>
+                <span class="category-amount">{{ c.amount | inr }}</span>
+            </div>
+            {% endfor %}
+        {% else %}
+        <p class="categories-empty">No spending data yet.</p>
+        {% endif %}
     </div>
 
 </div>

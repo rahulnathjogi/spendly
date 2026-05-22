@@ -1,9 +1,9 @@
 import sqlite3
 import functools
-from datetime import datetime
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash
-from database.db import get_db, init_db, seed_db, create_user, get_user_by_email, get_user_by_id, get_expense_stats
+from database.db import get_db, init_db, seed_db, create_user, get_user_by_email
+from database.queries import get_user_by_id, get_summary_stats, get_recent_transactions, get_category_breakdown
 
 app = Flask(__name__)
 app.secret_key = "spendly-dev-secret"
@@ -117,13 +117,12 @@ def logout():
 @app.route("/profile")
 @login_required
 def profile():
-    user  = get_user_by_id(session["user_id"])
-    stats = get_expense_stats(session["user_id"])
-    member_since = ""
-    if user and user["created_at"]:
-        dt = datetime.strptime(user["created_at"], "%Y-%m-%d %H:%M:%S")
-        member_since = dt.strftime("%B %Y")
-    return render_template("profile.html", user=user, stats=stats, member_since=member_since)
+    user         = get_user_by_id(session["user_id"])
+    stats        = get_summary_stats(session["user_id"])
+    transactions = get_recent_transactions(session["user_id"])
+    categories   = get_category_breakdown(session["user_id"])
+    return render_template("profile.html", user=user, stats=stats,
+                           transactions=transactions, categories=categories)
 
 
 @app.route("/expenses/add")
