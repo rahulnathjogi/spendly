@@ -376,7 +376,7 @@
 
     <!-- Profile Card -->
     <div class="profile-card">
-        <div class="profile-avatar">{{ user.name[0] | upper }}</div>
+        <div class="profile-avatar">{{ (user.name[0] if user.name else "?") | upper }}</div>
         <div class="profile-info">
             <h1>{{ user.name }}</h1>
             <p class="profile-email">{{ user.email }}</p>
@@ -389,29 +389,27 @@
         <div class="filter-bar">
             <div class="filter-presets">
                 <button type="submit" name="preset" value="all"
-                    class="preset-btn {% if not request.args.get('preset') or request.args.get('preset') == 'all' %}active{% endif %}">
+                    class="preset-btn {% if preset == 'all' %}active{% endif %}">
                     All Time
                 </button>
                 <button type="submit" name="preset" value="month"
-                    class="preset-btn {% if request.args.get('preset') == 'month' %}active{% endif %}">
+                    class="preset-btn {% if preset == 'month' %}active{% endif %}">
                     This Month
                 </button>
                 <button type="submit" name="preset" value="3months"
-                    class="preset-btn {% if request.args.get('preset') == '3months' %}active{% endif %}">
+                    class="preset-btn {% if preset == '3months' %}active{% endif %}">
                     Last 3 Months
                 </button>
                 <button type="submit" name="preset" value="6months"
-                    class="preset-btn {% if request.args.get('preset') == '6months' %}active{% endif %}">
+                    class="preset-btn {% if preset == '6months' %}active{% endif %}">
                     Last 6 Months
                 </button>
             </div>
             <div class="filter-separator"></div>
             <div class="filter-date-range">
-                <input type="date" name="date_from"
-                    value="{{ request.args.get('date_from', '') }}">
+                <input type="date" name="date_from" value="{{ date_from }}">
                 <span class="range-to">to</span>
-                <input type="date" name="date_to"
-                    value="{{ request.args.get('date_to', '') }}">
+                <input type="date" name="date_to" value="{{ date_to }}">
                 <button type="submit" class="apply-btn">Apply</button>
             </div>
         </div>
@@ -438,7 +436,13 @@
 
         <!-- Recent Transactions -->
         <div class="transactions-card">
-            <h2>Recent Transactions</h2>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem;">
+                <h2 style="margin-bottom:0;">Recent Transactions</h2>
+                <a href="{{ url_for('add_expense') }}"
+                   style="padding:0.4rem 1rem; background:var(--accent); color:#fff; border-radius:var(--radius-sm); font-size:0.875rem; font-weight:600; text-decoration:none;">
+                    + Add Expense
+                </a>
+            </div>
             {% if transactions %}
             <table class="transactions-table">
                 <thead>

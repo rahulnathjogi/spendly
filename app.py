@@ -1,9 +1,13 @@
+import math
 import sqlite3
 import functools
+from datetime import date as _date, datetime, timedelta
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash
 from database.db import get_db, init_db, seed_db, create_user, get_user_by_email
-from database.queries import get_user_by_id, get_summary_stats, get_recent_transactions, get_category_breakdown
+from database.queries import get_user_by_id, get_summary_stats, get_recent_transactions, get_category_breakdown, insert_expense
+
+ALLOWED_CATEGORIES = ["Food", "Transport", "Bills", "Health", "Entertainment", "Shopping", "Other"]
 
 app = Flask(__name__)
 app.secret_key = "spendly-dev-secret"
@@ -117,17 +121,106 @@ def logout():
 @app.route("/profile")
 @login_required
 def profile():
-    user         = get_user_by_id(session["user_id"])
-    stats        = get_summary_stats(session["user_id"])
-    transactions = get_recent_transactions(session["user_id"])
-    categories   = get_category_breakdown(session["user_id"])
+    uid    = session["user_id"]
+    today  = _date.today()
+
+    def _calendar_months_ago(d, n):
+        month = d.month - n
+        year  = d.year + (month - 1) // 12
+        month = ((month - 1) % 12) + 1
+        return d.replace(year=year, month=month, day=1)
+
+    # Resolve preset → date_from / date_to
+    preset = request.args.get("preset", "all")
+    if preset == "month":
+        date_from = today.replace(day=1).isoformat()
+        date_to   = today.isoformat()
+    elif preset == "3months":
+        date_from = _calendar_months_ago(today, 3).isoformat()
+        date_to   = today.isoformat()
+    elif preset == "6months":
+        date_from = _calendar_months_ago(today, 6).isoformat()
+        date_to   = today.isoformat()
+    else:
+        date_from = request.args.get("date_from", "").strip()
+        date_to   = request.args.get("date_to", "").strip()
+
+    # Validate custom dates — silently drop malformed values
+    def _parse(val):
+        try:
+            datetime.strptime(val, "%Y-%m-%d")
+            return val
+        except ValueError:
+            return None
+
+    date_from = _parse(date_from) if date_from else None
+    date_to   = _parse(date_to)   if date_to   else None
+
+    # Inverted range: flash error, reset filter and preset
+    if date_from and date_to and date_from > date_to:
+        flash("Start date must be before end date.", "error")
+        date_from = date_to = None
+        preset = "all"
+
+    # Require both bounds; clear single-sided input so UI reflects reality
+    if not (date_from and date_to):
+        date_from = date_to = None
+
+    user         = get_user_by_id(uid)
+    stats        = get_summary_stats(uid, date_from, date_to)
+    transactions = get_recent_transactions(uid, date_from=date_from, date_to=date_to)
+    categories   = get_category_breakdown(uid, date_from, date_to)
+
     return render_template("profile.html", user=user, stats=stats,
-                           transactions=transactions, categories=categories)
+                           transactions=transactions, categories=categories,
+                           date_from=date_from or "", date_to=date_to or "",
+                           preset=preset)
 
 
-@app.route("/expenses/add")
+@app.route("/expenses/add", methods=["GET", "POST"])
+@login_required
 def add_expense():
-    return "Add expense — coming in Step 7"
+    if request.method == "POST":
+        raw_amount      = request.form.get("amount", "").strip()
+        category        = request.form.get("category", "").strip()
+        raw_date        = request.form.get("date", "").strip()
+        description     = request.form.get("description", "").strip() or None
+        form            = {"amount": raw_amount, "category": category,
+                           "date": raw_date, "description": description or ""}
+
+        try:
+            amount = float(raw_amount)
+            if amount <= 0 or not math.isfinite(amount):
+                raise ValueError
+        except ValueError:
+            flash("Amount must be a positive number.")
+            return render_template("add_expense.html", form=form,
+                                   categories=ALLOWED_CATEGORIES)
+
+        if category not in ALLOWED_CATEGORIES:
+            flash("Please select a valid category.")
+            return render_template("add_expense.html", form=form,
+                                   categories=ALLOWED_CATEGORIES)
+
+        try:
+            datetime.strptime(raw_date, "%Y-%m-%d")
+        except ValueError:
+            flash("Please enter a valid date.")
+            return render_template("add_expense.html", form=form,
+                                   categories=ALLOWED_CATEGORIES)
+
+        try:
+            insert_expense(session["user_id"], amount, category, raw_date, description)
+        except sqlite3.Error:
+            flash("Could not save expense. Please try again.", "error")
+            return render_template("add_expense.html", form=form,
+                                   categories=ALLOWED_CATEGORIES)
+        flash("Expense added.", "success")
+        return redirect(url_for("profile"))
+
+    today = _date.today().isoformat()
+    form  = {"amount": "", "category": "", "date": today, "description": ""}
+    return render_template("add_expense.html", form=form, categories=ALLOWED_CATEGORIES)
 
 
 @app.route("/expenses/<int:id>/edit")
