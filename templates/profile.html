@@ -529,3 +529,16 @@
 
 </div>
 {% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    document.querySelectorAll('.preset-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            document.querySelector('input[name="date_from"]').value = '';
+            document.querySelector('input[name="date_to"]').value = '';
+        });
+    });
+}());
+</script>
+{% endblock %}
