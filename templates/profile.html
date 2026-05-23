@@ -247,6 +247,20 @@
 
     .tx-action a:hover { text-decoration: underline; }
 
+    .btn-delete {
+        font-size: 0.82rem;
+        color: var(--danger);
+        background: none;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        font-weight: 500;
+        font-family: inherit;
+        margin-left: 0.75rem;
+    }
+
+    .btn-delete:hover { text-decoration: underline; }
+
     .tx-date {
         color: var(--ink-muted);
         white-space: nowrap;
@@ -476,6 +490,10 @@
                         <td>{{ t.amount | inr }}</td>
                         <td class="tx-action">
                             <a href="{{ url_for('edit_expense', id=t.id) }}">Edit</a>
+                            <form method="POST" action="/expenses/{{ t.id }}/delete" style="display:inline"
+                                  onsubmit="return confirm('Delete this expense?')">
+                                <button type="submit" class="btn-delete">Delete</button>
+                            </form>
                         </td>
                     </tr>
                     {% endfor %}

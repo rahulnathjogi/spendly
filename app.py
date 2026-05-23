@@ -5,7 +5,7 @@ from datetime import date as _date, datetime, timedelta
 from flask import Flask, abort, flash, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash
 from database.db import get_db, init_db, seed_db, create_user, get_user_by_email
-from database.queries import get_user_by_id, get_summary_stats, get_recent_transactions, get_category_breakdown, insert_expense, get_expense_by_id, update_expense
+from database.queries import get_user_by_id, get_summary_stats, get_recent_transactions, get_category_breakdown, insert_expense, get_expense_by_id, update_expense, delete_expense
 
 ALLOWED_CATEGORIES = ["Food", "Transport", "Bills", "Health", "Entertainment", "Shopping", "Other"]
 
@@ -272,9 +272,15 @@ def edit_expense(id):
     return render_template("edit_expense.html", form=form, categories=ALLOWED_CATEGORIES)
 
 
-@app.route("/expenses/<int:id>/delete")
-def delete_expense(id):
-    return "Delete expense — coming in Step 9"
+@app.route("/expenses/<int:id>/delete", methods=["POST"])
+@login_required
+def delete_expense_route(id):
+    expense = get_expense_by_id(id, session["user_id"])
+    if expense is None:
+        abort(404)
+    delete_expense(id, session["user_id"])
+    flash("Expense deleted.", "success")
+    return redirect(url_for("profile"))
 
 
 if __name__ == "__main__":
